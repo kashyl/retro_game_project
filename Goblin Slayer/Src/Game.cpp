@@ -17,6 +17,8 @@ auto& player(manager.addEntity());
 auto& enemy(manager.addEntity());
 auto& wall(manager.addEntity());
 
+const char* mapfile = "assets/map2_32x32_tileset.png";
+
 //32 groups max  
 enum groupLabels : std::size_t
 {
@@ -26,6 +28,9 @@ enum groupLabels : std::size_t
 	groupColliders
 };
 
+auto& tiles(manager.getGroup(groupMap));
+auto& players(manager.getGroup(groupPlayers));
+auto& enemies(manager.getGroup(groupEnemies));
 
 Game::Game()
 {}
@@ -66,23 +71,29 @@ void Game::init(const char* title, int xpos, int ypos, int width, int height, bo
 
 	//implement ecs here
 	//TransformComponent(float x, float y, int h, int w, int sc)
+	//SpriteComponent(const char* path, bool isAnimated)
 
-	Map::LoadMap("assets/map1_16x16.txt", 16, 16);
+	Map::LoadMap("assets/map2_32x32.txt", 32, 32);
 
-	player.addComponent<TransformComponent>(1);
-	player.addComponent<SpriteComponent>("assets/knight1_idle.png", 4, 250);
+	player.addComponent<TransformComponent>(400.0f, 320.0f, 32, 32, 2);
+	player.addComponent<SpriteComponent>("assets/adv1_anim.png", true);
 	player.addComponent<KeyboardController>();
-	player.addComponent<ColliderComponent>("player");
+	player.addComponent<ColliderComponent>("Player ");
 	player.addGroup(groupPlayers);
 
+	/*enemy.addComponent<TransformComponent>(300.0f, 200.0f, 80, 64, 1);
+	enemy.addComponent<SpriteComponent>("assets/knight1_idle.png", true);
+	enemy.addComponent<ColliderComponent>("Forgotten Knight");
+	enemy.addGroup(groupEnemies);*/
+
 	enemy.addComponent<TransformComponent>(350.0f, 400.0f, 80, 64, 1);
-	enemy.addComponent<SpriteComponent>("assets/succubus1_idle.png", 4, 250);
-	wall.addComponent<ColliderComponent>("enemy");
+	enemy.addComponent<SpriteComponent>("assets/knight1_idle.png", true);
+	enemy.addComponent<ColliderComponent>("Enemy1");
 	enemy.addGroup(groupEnemies);
 
-	wall.addComponent<TransformComponent>(250.0f, 170.0f, 200, 20, 1);
+	wall.addComponent<TransformComponent>(300.0f, 170.0f, 200, 20, 1);
 	wall.addComponent<SpriteComponent>("assets/wall1.png");
-	wall.addComponent<ColliderComponent>("wall");
+	wall.addComponent<ColliderComponent>("Wall (Cobblestone)");
 	wall.addGroup(groupMap);
 }
 
@@ -103,18 +114,30 @@ void Game::update()
 {
 	manager.refresh();
 	manager.update();
+
+	Vector2D pVel = player.getComponent<TransformComponent>().velocity;
+	int pSpeed = player.getComponent<TransformComponent>().speed;
+
+	/*for (auto t : tiles)
+	{
+		t->getComponent<TileComponent>().destRect.x += -(pVel.x * pSpeed);
+		t->getComponent<TileComponent>().destRect.y += -(pVel.y * pSpeed);
+	}*/
+
 	for (auto cc : colliders)
 	{
-		Collision::AABB(player.getComponent<ColliderComponent>(), *cc);
+		//Collision::AABB(player.getComponent<ColliderComponent>(), *cc);
+
+		if (Collision::AABB(player.getComponent<ColliderComponent>(), wall.getComponent<ColliderComponent>()))
+		{
+			player.getComponent<TransformComponent>().velocity * -1;
+		}
 			//player.getComponent<TransformComponent>().scale = 1;
 			//player.getComponent<TransformComponent>().velocity * -1;
 			//std::cout << "Wall Hit!" << std::endl;
 	}
 }
 
-auto& tiles(manager.getGroup(groupMap));
-auto& players(manager.getGroup(groupPlayers));
-auto& enemies(manager.getGroup(groupEnemies));
 
 void Game::render()
 {
@@ -147,9 +170,9 @@ void Game::clean()
 	std::cout << "Game cleaned." << std::endl;
 }
 
-void Game::AddTile(int id, int x, int y)
+void Game::AddTile(int srcX, int srcY, int xpos, int ypos)
 {
 	auto& tile(manager.addEntity());
-	tile.addComponent<TileComponent>(x, y, 32, 32, id);
+	tile.addComponent<TileComponent>(srcX, srcY, xpos, ypos, mapfile);
 	tile.addGroup(groupMap);
 }
